@@ -84,7 +84,7 @@ function getBulgeCurvePoints(startPoint, endPoint, bulge, segments) {
  * @constructor
  */
 export function Viewer(data, parent, width, height, font) {
-
+    var selectedObject = null;
     createLineTypeShaders(data);
 
     var scene = new THREE.Scene();
@@ -193,6 +193,59 @@ export function Viewer(data, parent, width, height, font) {
         this.render();
     };
 
+    // Placeholder: Add a method to retrieve the selected object
+    Viewer.prototype.getSelectedObject = function () {
+        return selectedObject;
+    };
+
+    var selectedMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+
+    function onMouseClick(event) {
+        console.log("mouse clicked");
+        // Calculate mouse position in normalized device coordinates
+        var mouse = new THREE.Vector2();
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      
+        // Raycasting from the camera
+        var raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, camera);
+      
+        // Check for intersections with objects
+        var intersects = raycaster.intersectObjects(scene.children, true);
+        if (intersects.length > 0) {
+            console.log("found object selected");
+          var selectedMesh = intersects[0].object;
+          if (selectedObject) {
+            selectedObject.userData.selected = false;
+            // Reset the previously selected object's appearance if needed
+          }
+          selectedObject = selectedMesh;
+          selectedObject.userData.selected = true;
+          console.log("found object selected mesh"+ selectedObject);
+          // Update the selected object's appearance if needed
+          selectedObject.material = selectedMaterial;
+        }
+      }
+      document.addEventListener('click', onMouseClick, false);
+
+   function assignControls(mesh) {
+        console.log("assigned");
+        mesh.userData.entity = entity;
+        mesh.userData.selected = false;
+        mesh.onClick = function () {
+            console.log("clicked");
+            if (selectedObject) {
+              selectedObject.userData.selected = false;
+              // Reset the selected object's appearance if needed
+            }
+            selectedObject = mesh;
+            selectedObject.userData.selected = true;
+            // Update the selected object's appearance if needed
+            selectedObject.material.color.set(0xff0000);
+          };
+   }
+
     function drawEntity(entity, data) {
         var mesh;
         if (entity.type === 'CIRCLE' || entity.type === 'ARC') {
@@ -224,6 +277,8 @@ export function Viewer(data, parent, width, height, font) {
         else {
             console.log("Unsupported Entity Type: " + entity.type);
         }
+        if(mesh !=null)
+            assignControls(mesh);
         return mesh;
     }
 
